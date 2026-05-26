@@ -48,6 +48,7 @@
 
             async function fetchAndOpen(traceUrl) {
                 logs.innerText += `Fetching trace from ${traceUrl}...\n`;
+                logs.innerText += `${traceUrl}\n`;
                 const mtime = await getMtime();
                 const resp = await fetch(traceUrl);
                 // Error checcking is left as an exercise to the reader.

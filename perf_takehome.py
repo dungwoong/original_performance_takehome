@@ -131,6 +131,8 @@ class KernelBuilder:
         tmp_node_val = self.alloc_scratch("tmp_node_val")
         tmp_addr = self.alloc_scratch("tmp_addr")
 
+        # NOTE they're just manually unrolling the loop to output these instructions
+        # which is fine because instruction caching isn't a thing, your code size can be massive
         for round in range(rounds):
             for i in range(batch_size):
                 i_const = self.scratch_const(i)
@@ -148,7 +150,7 @@ class KernelBuilder:
                 body.append(("debug", ("compare", tmp_node_val, (round, i, "node_val"))))
                 # val = myhash(val ^ node_val)
                 body.append(("alu", ("^", tmp_val, tmp_val, tmp_node_val)))
-                body.extend(self.build_hash(tmp_val, tmp1, tmp2, round, i))
+                body.extend(self.build_hash(tmp_val, tmp1, tmp2, round, i)) # NOTE they have a helper func for build hash
                 body.append(("debug", ("compare", tmp_val, (round, i, "hashed_val"))))
                 # idx = 2*idx + (1 if val % 2 == 0 else 2)
                 body.append(("alu", ("%", tmp1, tmp_val, two_const)))
