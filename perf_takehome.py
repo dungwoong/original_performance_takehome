@@ -102,8 +102,9 @@ class KernelBuilder:
         slots = []
 
         for hi, (op1, val1, op2, op3, val3) in enumerate(HASH_STAGES):
-            slots.append(("alu", (op1, tmp1, val_hash_addr, self.scratch_const(val1))))
-            slots.append(("alu", (op3, tmp2, val_hash_addr, self.scratch_const(val3))))
+            slots.append(Instruction(
+                alu=[(op1, tmp1, val_hash_addr, self.scratch_const(val1)), (op3, tmp2, val_hash_addr, self.scratch_const(val3))]
+            ))
             slots.append(("alu", (op2, val_hash_addr, tmp1, tmp2)))
             slots.append(("debug", ("compare", val_hash_addr, (round, i, "hash_stage", hi))))
 
@@ -162,12 +163,15 @@ class KernelBuilder:
             for i in range(batch_size):
                 i_const = self.scratch_const(i)
                 # idx = mem[inp_indices_p + i]
-                body.append(("alu", ("+", tmp_addr, self.scratch["inp_indices_p"], i_const)))
-                body.append(("load", ("load", tmp_idx, tmp_addr)))
-                body.append(("debug", ("compare", tmp_idx, (round, i, "idx"))))
                 # val = mem[inp_values_p + i]
-                body.append(("alu", ("+", tmp_addr, self.scratch["inp_values_p"], i_const)))
-                body.append(("load", ("load", tmp_val, tmp_addr)))
+                body.append(Instruction(
+                    alu=[("+", tmp_addr, self.scratch["inp_indices_p"], i_const), 
+                         ("+", tmp_addr2, self.scratch["inp_values_p"], i_const)]
+                ))
+                body.append(Instruction(
+                    load=[("load", tmp_idx, tmp_addr), ("load", tmp_val, tmp_addr2)]
+                ))
+                body.append(("debug", ("compare", tmp_idx, (round, i, "idx"))))
                 body.append(("debug", ("compare", tmp_val, (round, i, "val"))))
                 # node_val = mem[forest_values_p + idx]
                 body.append(("alu", ("+", tmp_addr, self.scratch["forest_values_p"], tmp_idx)))
