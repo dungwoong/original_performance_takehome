@@ -36,7 +36,7 @@ FLOW
 - select writes cond != 0 ? a : b. Cond lives in scratch too
 - add_imm just adds an imm to scratch[a] so it's like an immediate add, no need to load stuff
 - vselect is just vector select
-- 
+- select dest cond a, b
 
 ### scratch write and mem write
 - get initialized at every step but deleted at the end
@@ -51,3 +51,16 @@ FLOW
 
 # Debug instruction
 - it's found in the `step`function, you can do compare or vcompare
+
+# Running the thing
+- just look at `perf_takehome.py` bottom of page
+
+# Inputs
+- wait so inputs is just a bunch of random numbers of size `batch_size`
+- you read from input indices and values and t.values, you write to input values and indices but you never modify the tree.
+
+- we can just grab both 2*x+1 and 2 and start modifying that shit
+
+# Mod 1
+- let's try modifying `1 if val % 2 == 0 else 2` to just be `val % 2 + 1`
+- I also packed some instructions together

@@ -17,6 +17,7 @@ We recommend you look through problem.py next.
 """
 
 from collections import defaultdict
+from dataclasses import dataclass
 import random
 import unittest
 
@@ -36,6 +37,25 @@ from problem import (
     reference_kernel2,
 )
 
+@dataclass
+class Instruction:
+    alu: tuple = None
+    valu: tuple = None
+    load: tuple = None
+    store: tuple = None
+    flow: tuple = None
+    debug: tuple = None
+
+    def build_instr(self):
+        instr = dict()
+        for item in ['alu', 'valu', 'load', 'store', 'flow', 'debug']:
+            if getattr(self, item) is not None:
+                payload = getattr(self, item)
+                assert len(payload) < SLOT_LIMITS[item], f'{self} too many {item}'
+                instr[item] = list(getattr(self, item))
+        return instr
+
+
 
 class KernelBuilder:
     def __init__(self):
@@ -48,11 +68,15 @@ class KernelBuilder:
     def debug_info(self):
         return DebugInfo(scratch_map=self.scratch_debug)
 
-    def build(self, slots: list[tuple[Engine, tuple]], vliw: bool = False):
+    def build(self, slots: list[tuple[Engine, tuple] | Instruction], vliw: bool = False):
         # Simple slot packing that just uses one slot per instruction bundle
         instrs = []
-        for engine, slot in slots:
-            instrs.append({engine: [slot]})
+        for item in slots:
+            if isinstance(item, Instruction):
+                instrs.append(item.build_instr())
+            else:
+                engine, slot = item
+                instrs.append({engine: [slot]})
         return instrs
 
     def add(self, engine, slot):
@@ -153,11 +177,11 @@ class KernelBuilder:
                 body.extend(self.build_hash(tmp_val, tmp1, tmp2, round, i)) # NOTE they have a helper func for build hash
                 body.append(("debug", ("compare", tmp_val, (round, i, "hashed_val"))))
                 # idx = 2*idx + (1 if val % 2 == 0 else 2)
-                body.append(("alu", ("%", tmp1, tmp_val, two_const)))
-                body.append(("alu", ("==", tmp1, tmp1, zero_const)))
-                body.append(("flow", ("select", tmp3, tmp1, one_const, two_const)))
-                body.append(("alu", ("*", tmp_idx, tmp_idx, two_const)))
-                body.append(("alu", ("+", tmp_idx, tmp_idx, tmp3)))
+                body.append(("alu", ("%", tmp1, tmp_val, two_const))) # val % 2
+                body.append(Instruction(
+                    alu=[("+", tmp3, tmp1, one_const), ("*", tmp_idx, tmp_idx, two_const)]
+                ))
+                body.append(("alu", ("+", tmp_idx, tmp_idx, tmp3))) # + 1 or 2
                 body.append(("debug", ("compare", tmp_idx, (round, i, "next_idx"))))
                 # idx = 0 if idx >= n_nodes else idx
                 body.append(("alu", ("<", tmp1, tmp_idx, self.scratch["n_nodes"])))
