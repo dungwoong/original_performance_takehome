@@ -159,8 +159,9 @@ class KernelBuilder:
 
         # NOTE they're just manually unrolling the loop to output these instructions
         # which is fine because instruction caching isn't a thing, your code size can be massive
-        for round in range(rounds):
-            for i in range(batch_size):
+        
+        for i in range(batch_size):
+            for round in range(rounds):
                 i_const = self.scratch_const(i)
                 # idx = mem[inp_indices_p + i]
                 # val = mem[inp_values_p + i]

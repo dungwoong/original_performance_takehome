@@ -64,3 +64,10 @@ FLOW
 # Mod 1
 - let's try modifying `1 if val % 2 == 0 else 2` to just be `val % 2 + 1`
 - I also packed some instructions together
+
+# Big mods
+- You can parallelize the batch_size since all you do is read from input[i] and write to input[i]. You never touch the tree, batch size doesn't depend on each other.
+- I'm not sure what the differences between iterations of i are, but ok
+
+- The second thing is you can pipeline rounds I THINK, so you can do round 1 1 and on the next step you can dispatch round 2 1 because rounds only depend on each other?
+- I'm pretty sure we can reorder the loops actually, that makes it a lot easier to reason
